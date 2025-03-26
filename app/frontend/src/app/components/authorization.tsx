@@ -12,14 +12,12 @@ const Authorization = ({ children }: AuthorizationProps) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Check if user is already authenticated (e.g., from localStorage)
         const token = localStorage.getItem('authToken');
         if (token) {
             try {
-                jwtDecode(token); // Validate token
+                jwtDecode(token);
                 setIsAuthenticated(true);
             } catch (error) {
-                // Token invalid, require login again
                 localStorage.removeItem('authToken');
             }
         }
@@ -31,13 +29,9 @@ const Authorization = ({ children }: AuthorizationProps) => {
 
     const handleSuccess = async (response: GoogleLoginResponse) => {
         const userData = jwtDecode(response.credential);
-
         console.log("User Data:", userData);
-        
-        // Store the token in localStorage
         localStorage.setItem('authToken', response.credential);
-        
-        // Send user data to backend for storage and authorization
+
         try {
             const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
             await fetch(`${backendUrl}/api/authorization`, {
@@ -50,8 +44,6 @@ const Authorization = ({ children }: AuthorizationProps) => {
         } catch (error) {
             console.error("Error sending user data to backend:", error);
         }
-        
-        // Update authentication state
         setIsAuthenticated(true);
     };
 
@@ -63,17 +55,22 @@ const Authorization = ({ children }: AuthorizationProps) => {
     return (
         <GoogleOAuthProvider clientId={clientId}>
             {!isAuthenticated ? (
-                <div className="auth-container">
-                    <h2>Sign in with Google</h2>
-                    <GoogleLogin 
-                        onSuccess={handleSuccess} 
-                        onError={handleFailure}
-                        useOneTap
-                        auto_select
-                    />
+                <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-400 to-blue-300 text-white p-6">
+                    <div className="bg-white text-gray-900 shadow-2xl rounded-2xl p-10 flex flex-col items-center max-w-md w-full border border-blue-200">
+                        <h2 className="text-3xl font-bold mb-6 text-blue-700">Sign in with Google</h2>
+                        <p className="text-gray-600 mb-6 text-center">Access your account securely with Google authentication.</p>
+                        <div className="w-full flex justify-center">
+                            <GoogleLogin 
+                                onSuccess={handleSuccess} 
+                                onError={handleFailure} 
+                                useOneTap 
+                                auto_select
+                            />
+                        </div>
+                    </div>
                 </div>
             ) : (
-                children // Only render children if authenticated
+                children
             )}
         </GoogleOAuthProvider>
     );
