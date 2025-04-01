@@ -4,7 +4,7 @@ import { MongoClient } from 'mongodb'; // Only imported here, server-side.
 import Cors from 'cors';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGODB_URI = process.env.CONNECTION_STRING || '';
 const DB_NAME = process.env.DB_NAME || 'authorizations';
 
 // Initialize CORS middleware

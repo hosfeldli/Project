@@ -5,7 +5,7 @@ import { MongoClient } from 'mongodb';
 // Secret key for decryption (in a real app, this should be in environment variables)
 const SECRET_KEY = process.env.ENCRYPTION_KEY || 'default';
 const ALGORITHM = 'aes-256-cbc';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGODB_URI = process.env.CONNECTION_STRING || '';
 const DB_NAME = process.env.DB_NAME || 'authorizations';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

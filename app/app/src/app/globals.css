@@ -3,13 +3,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --light-blue: #3F8DF7;
+  --medium-blue: #2257AB;
+  --dark-blue: #143768;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-light-blue: var(--light-blue);
+  --color-medium-blue: var(--medium-blue);
+  --color-dark-blue: var(--dark-blue);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-header: 'Kadwa', serif;
+  --font-paragraph: 'Khmer', sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +30,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Khmer', Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Kadwa', serif;
 }
