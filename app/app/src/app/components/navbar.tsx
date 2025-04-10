@@ -1,8 +1,8 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-'use client';
 
 interface User {
     id: string;
@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
             try {
                 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
                 const response = await fetch(`${backendUrl}/api/getuser`, {
-                    credentials: 'include', // Include cookies if using sessions
+                    credentials: 'include', 
                 });
                 
                 if (response.ok) {
@@ -56,11 +56,11 @@ const Navbar: React.FC = () => {
     }, []);
 
     return (
-        <nav className="bg-gray-800 text-white p-4">
+        <nav className="bg-blue-800 text-white p-4">
             <div className="container mx-auto flex justify-between items-center">
                 <div className="flex items-center space-x-4">
-                    <Link href="/" className="text-xl font-bold">
-                        My App
+                    <Link href="/" className="text-xl font-bold text-white">
+                        StackScope 
                     </Link>
                     <div className="hidden md:flex space-x-4">
                         <Link href="/" className="hover:text-gray-300">

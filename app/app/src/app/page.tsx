@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Navbar from "./components/navbar"; // Import the Navbar
 import Authorization from "./components/authorization"; // Adjust path as needed
 
 function WelcomePage({ onSignIn }: { onSignIn: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-b from-blue-50 to-white">
+      <Navbar />
       <div className="text-center max-w-md">
         <h1 className="text-3xl font-bold mb-4">Welcome to Service Account Manager</h1>
         <p className="mb-6 text-gray-600">
@@ -59,6 +61,7 @@ function HomePage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8">
+      <Navbar />
       <main className="flex flex-col items-center gap-8 w-full max-w-md">
         <h1 className="text-2xl font-bold">Upload Service Account Credentials</h1>
 
@@ -86,7 +89,9 @@ function HomePage() {
 export default function Home() {
   return (
     <Authorization>
-      {(isAuthenticated) => (isAuthenticated ? <HomePage /> : <WelcomePage onSignIn={() => console.log("Triggering sign in")} />)}
+      {(isAuthenticated) =>
+        isAuthenticated ? <HomePage /> : <WelcomePage onSignIn={() => console.log("Triggering sign in")} />
+      }
     </Authorization>
   );
 }
