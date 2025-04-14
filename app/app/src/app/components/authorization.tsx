@@ -37,7 +37,7 @@ const Authorization = ({ children }: AuthorizationProps) => {
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
-      await fetch(`${backendUrl}/api/authorization`, {
+      await fetch(`${backendUrl}/api/user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: response.credential, user: userData }),
