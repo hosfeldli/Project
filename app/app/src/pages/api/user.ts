@@ -2,39 +2,23 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import { MongoClient, ObjectId } from 'mongodb';
 import Cors from 'cors';
-import { OAuth2Client } from 'google-auth-library';
+import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
-const GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID ||
-  '989472724021-51r6abpc2bv48i5v0hi1d3bgnqnp9rpf.apps.googleusercontent.com';
 const MONGODB_URI =
   process.env.CONNECTION_STRING ||
   'mongodb+srv://liamhosfeld:WHfo3zECWP8DKECo@cluster0.dt4wqx9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 const DB_NAME = process.env.DB_NAME || 'authorizations';
 
-// Initialize CORS middleware for both GET and POST
 const cors = Cors({
-  methods: ['GET', 'POST'],
-  origin: /^http:\/\/localhost(:[0-9]+)?$/, // Allow localhost with any port
+  methods: ['POST', 'GET'],
+  origin: /^http:\/\/localhost(:[0-9]+)?$/,
 });
-
-const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-async function verifyGoogleToken(token: string) {
-  const ticket = await oauthClient.verifyIdToken({
-    idToken: token,
-    audience: GOOGLE_CLIENT_ID,
-  });
-  return ticket.getPayload();
-}
 
 function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
   return new Promise((resolve, reject) => {
     fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
+      if (result instanceof Error) return reject(result);
       return resolve(result);
     });
   });
@@ -46,77 +30,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
   const db = client.db(DB_NAME);
-  const collection = db.collection('users');
+  const users = db.collection('users');
 
   try {
     if (req.method === 'POST') {
-      const { token } = req.body;
+      const { username, password, mode } = req.body;
 
-      if (!token) {
-        return res.status(400).json({ message: 'Missing token' });
+      if (!username || !password || !mode)
+        return res.status(400).json({ message: 'Missing username, password, or mode' });
+
+      const existingUser = await users.findOne({ username });
+
+      if (mode === 'register') {
+        if (existingUser) return res.status(409).json({ message: 'Username already taken' });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const id = new ObjectId();
+        const newUser = {
+          _id: id,
+          id: id,
+          username,
+          password: hashedPassword,
+          createdAt: new Date(),
+        };
+        await users.insertOne(newUser);
+
+        const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: '7d' });
+        return res.status(201).json({ message: 'User created', userToken: id, sessionToken: token });
       }
 
-      const decoded = jwt.decode(token);
-      if (!decoded) {
-        return res.status(400).json({ message: 'Invalid token' });
-      }
+      // login
+      if (!existingUser) return res.status(401).json({ message: 'Invalid credentials' });
 
-      const { sub, name, email, picture } = decoded as {
-        sub: string;
-        name: string;
-        email: string;
-        picture: string;
-      };
+      const passwordMatch = await bcrypt.compare(password, existingUser.password);
+      if (!passwordMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-      let user = await collection.findOne({ googleId: sub });
-      if (!user) {
-        user = { _id: new ObjectId(), googleId: sub, name, email, picture, token };
-        await collection.insertOne(user);
-      }
-
-      const sessionToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
-
-      return res.status(200).json({ message: 'Authenticated', sessionToken, user });
+      const token = jwt.sign({ userId: existingUser._id }, JWT_SECRET, { expiresIn: '7d' });
+      return res.status(200).json({ message: 'Logged in', userToken: existingUser._id, sessionToken: token });
     }
 
     if (req.method === 'GET') {
-      const sessionToken = req.headers.authorization?.split(' ')[1];
-      if (!sessionToken) {
-        return res.status(401).json({ message: 'No token provided' });
+      // Extract user ID from query parameters
+      const { id } = req.query;
+
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ message: 'User ID is required and must be a string' });
       }
 
-      let decoded;
-      try {
-        decoded = await verifyGoogleToken(sessionToken);
-      } catch (error) {
-        console.error('Error verifying Google token:', error);
-        return res.status(401).json({ message: 'Invalid Google token' });
+      // Validate if id is a valid ObjectId
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid user ID format' });
       }
 
-      if (!decoded || !decoded.sub) {
-        return res.status(401).json({ message: 'Invalid token payload' });
-      }
-
-      const user = await collection.findOne({ googleId: decoded.sub });
+      const user = await users.findOne(
+        { _id: new ObjectId(id) },
+        { projection: { password: 0 } } // Do not return password
+      );
 
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      return res.status(200).json({
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          picture: user.picture,
-          googleId: user.googleId,
-        },
-      });
+      return res.status(200).json({ user });
     }
 
     return res.status(405).json({ message: 'Method not allowed' });
-  } catch (error) {
-    console.error('Error:', error);
+  } catch (err) {
+    console.error('API Error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   } finally {
     await client.close();
